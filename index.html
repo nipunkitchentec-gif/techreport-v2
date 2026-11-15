@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Technician Report Management System V2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Top App Bar -->
+  <header class="bg-slate-900 text-white px-4 py-3 shadow-md sticky top-0 z-30 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="bg-blue-600 w-9 h-9 rounded-lg flex items-center justify-center font-bold text-lg shadow">
+        <i class="fa-solid fa-kitchen-set"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-bold leading-tight">TechReport Pro <span class="text-xs bg-blue-600 px-1.5 py-0.5 rounded ml-1">V2</span></h1>
+        <p class="text-[11px] text-slate-400">Commercial Kitchen Service Portal</p>
+      </div>
+    </div>
+    <div id="syncStatus" class="flex items-center gap-1.5 text-xs bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="syncDot"></span>
+      <span id="syncText">Connecting...</span>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-white border-b border-slate-200 flex text-sm sticky top-[60px] z-20 shadow-sm">
+    <button onclick="switchTab('new')" id="tab-new" class="flex-1 py-3 text-center tab-active transition">
+      <i class="fa-solid fa-plus-circle mr-1"></i> New Report
+    </button>
+    <button onclick="switchTab('logs')" id="tab-logs" class="flex-1 py-3 text-center text-slate-500 transition">
+      <i class="fa-solid fa-list-check mr-1"></i> Live Logs (<span id="reportCount">0</span>)
+    </button>
+    <button onclick="switchTab('dev')" id="tab-dev" class="flex-1 py-3 text-center text-slate-500 transition">
+      <i class="fa-solid fa-headset mr-1"></i> Support
+    </button>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-2xl w-full mx-auto p-4 pb-20">
+
+    <!-- SECTION 1: NEW SERVICE REPORT FORM -->
+    <section id="view-new" class="space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-clipboard-list text-blue-600"></i> Service Call Details
+        </h2>
+
+        <form id="reportForm" class="space-y-3.5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Technician Name *</label>
+              <input type="text" id="techName" required placeholder="e.g., Nipun"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Service Date *</label>
+              <input type="date" id="serviceDate" required
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Client / Restaurant Name & Location *</label>
+            <input type="text" id="clientName" required placeholder="e.g., Marina Hotel Kitchen - Dubai"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Equipment Brand / Model *</label>
+              <input type="text" id="equipment" required placeholder="e.g., Rational iCombi Pro / Ice Maker"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Job Status *</label>
+              <select id="jobStatus"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <option value="Completed">✅ Completed</option>
+                <option value="Pending Parts">⏳ Pending Spare Parts</option>
+                <option value="Under Observation">🔍 Under Observation</option>
+                <option value="Follow-up Required">⚠️ Follow-up Required</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Time In</label>
+              <input type="time" id="timeIn"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Time Out</label>
+              <input type="time" id="timeOut"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Fault Reported & Work Performed *</label>
+            <textarea id="workDone" rows="3" required placeholder="Describe fault diagnosis, parts replaced, pressure/temp readings..."
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Spare Parts Used (Optional)</label>
+            <input type="text" id="partsUsed" placeholder="e.g., Solenoid valve 240V, 3/4 gas connector"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+
+          <button type="submit" id="submitBtn"
+            class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 rounded-lg shadow transition flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Submit & Sync Report to Cloud
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- SECTION 2: LIVE CLOUD LOGS -->
+    <section id="view-logs" class="hidden space-y-3">
+      <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
+        <input type="text" id="searchInput" onkeyup="renderReports()" placeholder="Search client, technician, equipment..."
+          class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <select id="filterStatus" onchange="renderReports()"
+          class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none">
+          <option value="ALL">All Statuses</option>
+          <option value="Completed">Completed</option>
+          <option value="Pending Parts">Pending Parts</option>
+          <option value="Under Observation">Under Observation</option>
+          <option value="Follow-up Required">Follow-up Required</option>
+        </select>
+      </div>
+
+      <div id="reportsList" class="space-y-3">
+        <div class="text-center py-10 text-slate-400 text-sm">
+          <i class="fa-solid fa-spinner fa-spin text-xl mb-2"></i>
+          <p>Loading live team reports...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: DEVELOPER & TECHNICAL SUPPORT -->
+    <section id="view-dev" class="hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-900 to-blue-900 h-24"></div>
+        <div class="px-5 pb-6 -mt-12 text-center">
+          <img src="1000044128.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Nipun&background=2563eb&color=fff&size=128'"
+            alt="Nipun - System Developer"
+            class="w-24 h-24 rounded-full border-4 border-white shadow-md mx-auto object-cover bg-slate-200" />
+          <h2 class="text-lg font-bold text-slate-900 mt-2">Nipun</h2>
+          <p class="text-xs font-medium text-blue-600 uppercase tracking-wide">System Developer & Commercial Kitchen Specialist</p>
+          <p class="text-xs text-slate-500 mt-2 max-w-md mx-auto">
+            For system updates, custom report templates, database maintenance, or technical support across UAE field operations, reach out directly below.
+          </p>
+
+          <div class="mt-5 space-y-2.5 text-left">
+            <a href="https://wa.me/971562284001?text=Hello%20Nipun,%20I%20need%20support%20with%20the%20Technician%20Report%20System%20V2."
+              target="_blank"
+              class="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-lg">
+                  <i class="fa-brands fa-whatsapp"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-semibold text-emerald-900">WhatsApp Direct Support</p>
+                  <p class="text-sm font-bold text-emerald-700">+971 56 228 4001</p>
+                </div>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-emerald-600 text-xs"></i>
+            </a>
+
+            <a href="mailto:nipunkitchentec@gmail.com?subject=Technician%20Report%20System%20V2%20Support"
+              class="flex items-center justify-between p-3.5 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 transition">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg">
+                  <i class="fa-solid fa-envelope"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-semibold text-blue-900">Email Technical Inquiries</p>
+                  <p class="text-sm font-bold text-blue-700">nipunkitchentec@gmail.com</p>
+                </div>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-blue-600 text-xs"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+    Report synced to cloud!
+  </div>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCEw2stL-C4yZ1QhFUFJoxQDr6pIE3Tuuo",
+      authDomain: "kitchen-service-reports.firebaseapp.com",
+      projectId: "kitchen-service-reports",
+      storageBucket: "kitchen-service-reports.firebasestorage.app",
+      messagingSenderId: "227871270368",
+      appId: "1:227871270368:web:2f8cf9c04c7e13e85ef785",
+      measurementId: "G-1WR2GHQKG1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const reportsCol = collection(db, "service_reports");
+
+    let allReports = [];
+
+    // Set default date & saved technician name
+    document.getElementById("serviceDate").valueAsDate = new Date();
+    const savedTech = localStorage.getItem("lastTechName");
+    if (savedTech) document.getElementById("techName").value = savedTech;
+
+    // Real-time Firestore listener
+    const q = query(reportsCol, orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+      document.getElementById("syncDot").className = "w-2 h-2 rounded-full bg-emerald-400";
+      document.getElementById("syncText").textContent = "Cloud Live";
+
+      allReports = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      document.getElementById("reportCount").textContent = allReports.length;
+      window.renderReports();
+    }, (error) => {
+      console.error("Firestore error:", error);
+      document.getElementById("syncDot").className = "w-2 h-2 rounded-full bg-red-500";
+      document.getElementById("syncText").textContent = "Offline / Error";
+    });
+
+    // Submit form
+    document.getElementById("reportForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving to Cloud...`;
+
+      const techName = document.getElementById("techName").value.trim();
+      localStorage.setItem("lastTechName", techName);
+
+      const payload = {
+        techName,
+        serviceDate: document.getElementById("serviceDate").value,
+        clientName: document.getElementById("clientName").value.trim(),
+        equipment: document.getElementById("equipment").value.trim(),
+        jobStatus: document.getElementById("jobStatus").value,
+        timeIn: document.getElementById("timeIn").value || "-",
+        timeOut: document.getElementById("timeOut").value || "-",
+        workDone: document.getElementById("workDone").value.trim(),
+        partsUsed: document.getElementById("partsUsed").value.trim() || "None",
+        createdAt: serverTimestamp()
+      };
+
+      try {
+        await addDoc(reportsCol, payload);
+        document.getElementById("clientName").value = "";
+        document.getElementById("equipment").value = "";
+        document.getElementById("timeIn").value = "";
+        document.getElementById("timeOut").value = "";
+        document.getElementById("workDone").value = "";
+        document.getElementById("partsUsed").value = "";
+        showToast("✅ Report saved & synced with team!");
+        window.switchTab("logs");
+      } catch (err) {
+        alert("Error saving report: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Submit & Sync Report to Cloud`;
+      }
+    });
+
+    // Delete report
+    window.deleteReport = async (id) => {
+      if (!confirm("Delete this service report permanently?")) return;
+      try {
+        await deleteDoc(doc(db, "service_reports", id));
+        showToast("🗑️ Report deleted");
+      } catch (err) {
+        alert("Delete failed: " + err.message);
+      }
+    };
+
+    // Share report via WhatsApp
+    window.shareWhatsApp = (id) => {
+      const r = allReports.find(item => item.id === id);
+      if (!r) return;
+      const msg = `*SERVICE REPORT - TECHREPORT PRO*%0A` +
+        `*Date:* ${r.serviceDate}%0A` +
+        `*Technician:* ${r.techName}%0A` +
+        `*Client:* ${r.clientName}%0A` +
+        `*Equipment:* ${r.equipment}%0A` +
+        `*Time:* ${r.timeIn} - ${r.timeOut}%0A` +
+        `*Status:* ${r.jobStatus}%0A` +
+        `*Work Done:* ${r.workDone}%0A` +
+        `*Parts:* ${r.partsUsed}`;
+      window.open(`https://wa.me/?text=${msg}`, "_blank");
+    };
+
+    // Render reports list
+    window.renderReports = () => {
+      const container = document.getElementById("reportsList");
+      const term = document.getElementById("searchInput").value.toLowerCase();
+      const statusFilter = document.getElementById("filterStatus").value;
+
+      const filtered = allReports.filter(r => {
+        const matchesTerm =
+          (r.clientName || "").toLowerCase().includes(term) ||
+          (r.techName || "").toLowerCase().includes(term) ||
+          (r.equipment || "").toLowerCase().includes(term) ||
+          (r.workDone || "").toLowerCase().includes(term);
+        const matchesStatus = statusFilter === "ALL" || r.jobStatus === statusFilter;
+        return matchesTerm && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-xl p-8 text-center border border-slate-200 text-slate-400 text-sm">
+            <i class="fa-regular fa-folder-open text-2xl mb-2"></i>
+            <p>No service reports found.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(r => {
+        let badgeColor = "bg-emerald-100 text-emerald-800";
+        if (r.jobStatus === "Pending Parts") badgeColor = "bg-amber-100 text-amber-800";
+        if (r.jobStatus === "Under Observation") badgeColor = "bg-blue-100 text-blue-800";
+        if (r.jobStatus === "Follow-up Required") badgeColor = "bg-red-100 text-red-800";
+
+        return `
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-2">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <h3 class="font-bold text-slate-900 text-sm">${escapeHtml(r.clientName)}</h3>
+                <p class="text-xs text-blue-600 font-semibold">${escapeHtml(r.equipment)}</p>
+              </div>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${badgeColor} whitespace-nowrap">
+                ${escapeHtml(r.jobStatus)}
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">
+              ${escapeHtml(r.workDone)}
+            </p>
+
+            <div class="text-[11px] text-slate-500 flex flex-wrap gap-x-4 gap-y-1 pt-1">
+              <span><i class="fa-solid fa-user-gear text-slate-400 mr-1"></i>${escapeHtml(r.techName)}</span>
+              <span><i class="fa-regular fa-calendar text-slate-400 mr-1"></i>${escapeHtml(r.serviceDate)}</span>
+              <span><i class="fa-regular fa-clock text-slate-400 mr-1"></i>${escapeHtml(r.timeIn)} – ${escapeHtml(r.timeOut)}</span>
+              <span><i class="fa-solid fa-gears text-slate-400 mr-1"></i>Parts: ${escapeHtml(r.partsUsed)}</span>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 flex justify-end gap-2">
+              <button onclick="shareWhatsApp('${r.id}')" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2.5 py-1 rounded-md font-medium transition">
+                <i class="fa-brands fa-whatsapp mr-1"></i> Share
+              </button>
+              <button onclick="deleteReport('${r.id}')" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2.5 py-1 rounded-md font-medium transition">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    };
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = m
